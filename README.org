@@ -1,0 +1,18 @@
+#+TITLE: ob-arm-asm.el
+#+AUTHOR: Anton Hibl
+
+* Org Babel ARM 64 Assembly Language Support
+
+Allows for basic editing of arm-64 assembly language source code blocks with org
+babel; includes native support for assembling, linking, and execution. Planning
+to move to MELPA eventually but waiting for other package recipes of mine to
+merge first.
+
+** Dependencies
+
+you will need working isntallations of both ~as~ and ~ld~ in order to properly
+work with this package as it requires both for linking and assembling.
+
+** Contributing
+
+Feel free to create a PR with any improvements.
