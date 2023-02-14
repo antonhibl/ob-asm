@@ -63,6 +63,7 @@
 Argument VAL value to check against list."
   (list 'if (list 'listp val) val (list 'list val)))
 
+;; handle assembling, linking, compiling, and executing source blocks
 (defun ob-asm-assemble-then-execute (filepath &rest params)
   "Handle assembling and executing source blocks based on tangle ID.
 Argument FILEPATH file to assemble from, must specify tangle file.
@@ -87,7 +88,7 @@ Optional PARAMS: :target, :assembler, :linker, :compiler, :debug."
           (progn
             (message (shell-command-to-string (format "%s -o %s %s" compiler filename filepath)))
             (message (shell-command-to-string (format "./%s" filename)))))
-      (error 
+      (error
        (message "%s" (error-message-string err))))))
 
 (defun org-babel-execute:asm (body params)
