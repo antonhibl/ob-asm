@@ -1,4 +1,4 @@
-#+TITLE: ob-arm-asm.el
+#+TITLE: ob-assembly.el
 #+AUTHOR: Anton Hibl
 
 * Org Babel ARM 64 Assembly Language Support
