@@ -63,22 +63,55 @@
 Argument VAL value to check against list."
   (list 'if (list 'listp val) val (list 'list val)))
 
-(defun ob-asm-assemble-then-execute (filepath)
+(defun ob-asm-assemble-then-execute (filepath &rest params)
   "Handle assembling and executing source blocks based on tangle ID.
-Argument FILEPATH file to assemble from, must specify tangle file."
-  (interactive)
-  (let ((filename (file-name-sans-extension filepath)))
-    (message (shell-command-to-string (format "clang -o %s %s" filename filepath)))
-    (message (shell-command-to-string (format "%s" filename)))))
+Argument FILEPATH file to assemble from, must specify tangle file.
+Optional PARAMS: :target, :assembler, :linker, :compiler, :debug."
+  (let ((filename (file-name-sans-extension filepath))
+        (target (or (cdr (assoc :target params))
+                    (file-name-sans-extension filepath)))
+        (assembler (or (cdr (assoc :assembler params))
+                       "as"))
+        (linker (or (cdr (assoc :linker params))
+                    "ld"))
+        (compiler (or (cdr (assoc :compiler params))
+                      "clang"))
+        (debug (if (cdr (assoc :debug params)) t nil)))
+    (condition-case err
+        (if debug
+            (progn
+              (message (shell-command-to-string (format "%s -o %s.o %s" assembler target filepath)))
+              (message (shell-command-to-string (format "%s -o %s %s.o" linker
+  filename (format "%s.o" target))))
+              (message (shell-command-to-string (format "./%s" filename))))
+          (progn
+            (message (shell-command-to-string (format "%s -o %s %s" compiler filename filepath)))
+            (message (shell-command-to-string (format "./%s" filename)))))
+      (error 
+       (message "%s" (error-message-string err))))))
 
 (defun org-babel-execute:asm (body params)
   "Execute assembly code using an external assembler.
 BODY contains the assembly code.
 PARAMS contains any additional parameters."
-  (let ((tangle-file (cdr (assoc :tangle params))))
+  (let* ((tangle-file (cdr (assoc :tangle params)))
+         (target (or (cdr (assoc :target params))
+                     (file-name-sans-extension tangle-file)))
+         (assembler (or (cdr (assoc :assembler params))
+                        "as"))
+         (linker (or (cdr (assoc :linker params))
+                     "ld"))
+         (compiler (or (cdr (assoc :compiler params))
+                       "clang"))
+         (debug (if (cdr (assoc :debug params)) t nil)))
     (with-temp-file tangle-file
       (insert body))
-    (ob-asm-assemble-then-execute tangle-file)))
+    (ob-asm-assemble-then-execute tangle-file
+                                  :target target
+                                  :assembler assembler
+                                  :linker linker
+                                  :compiler compiler
+                                  :debug debug)))
 
 ;; This function should be used to assign any variables in params in
 ;; the context of the session environment.
