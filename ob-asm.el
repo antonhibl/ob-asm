@@ -24,7 +24,7 @@
 ;;; Commentary:
 
 ;; Org-Babel support for evaluating arm 64 assembly code.  Not fully developed
-;; as of yet.  Feel free to contribute a PR
+;; as of yet.  Feel free to contribute a PR with improvements.
 
 ;;; Requirements:
 
@@ -53,11 +53,8 @@
 
 (defvar org-babel-default-header-args:asm '())
 
-(defvar ob-asm-assemble-command "as"
+(defvar ob-asm-assemble-command "clang"
   "The command to use to assemble the arm-64 assembly code.")
-
-(defvar ob-asm-link-command "ld"
-  "The command to use to link the arm-64 assembly code.")
 
 ;; This macro checks if the given value is a list and returns it as is or
 ;; wrapped in a list if it's not a list.
@@ -66,28 +63,22 @@
 Argument VAL value to check against list."
   (list 'if (list 'listp val) val (list 'list val)))
 
+(defun ob-asm-assemble-then-execute (filepath)
+  "Handle assembling and executing source blocks based on tangle ID.
+Argument FILEPATH file to assemble from, must specify tangle file."
+  (interactive)
+  (let ((filename (file-name-sans-extension filepath)))
+    (message (shell-command-to-string (format "clang -o %s %s" filename filepath)))
+    (message (shell-command-to-string (format "%s" filename)))))
+
 (defun org-babel-execute:asm (body params)
-  "Execute a block of arm-64 assembly code with org-babel.
-This function is
-called by `org-babel-execute-src-block'
-Argument BODY source block body.
-Argument PARAMS source block parameters."
-  (message "assembling arm-64 source code block")
-  ;; 1. Assemble the source block using org-babel-temp-file function to create
-  ;; a temporary file for the assembly code.
-  (let ((assembled-file (org-babel-temp-file "asm-")))
-    (with-temp-file assembled-file
-      (insert body)
-      (shell-command (format "%s -o %s %s" ob-asm-assemble-command
-                             assembled-file assembled-file)))
-    ;; 2. Link the object file generated from assembling the code with
-    ;; org-babel-temp-file to create a temporary executable file.
-    (let ((executable-file (org-babel-temp-file "asm-")))
-      (shell-command (format "%s -o %s %s" ob-asm-link-command
-                             executable-file assembled-file))
-      ;; 3. Run the temporary executable file and return the output as results
-      ;; for org-babel.
-      (org-babel-eval (concat "./" executable-file) ""))))
+  "Execute assembly code using an external assembler.
+BODY contains the assembly code.
+PARAMS contains any additional parameters."
+  (let ((tangle-file (cdr (assoc :tangle params))))
+    (with-temp-file tangle-file
+      (insert body))
+    (ob-asm-assemble-then-execute tangle-file)))
 
 ;; This function should be used to assign any variables in params in
 ;; the context of the session environment.
@@ -95,7 +86,8 @@ Argument PARAMS source block parameters."
   "This function does nothing as arm-64 assembly is an assembled language.
 Argument SESSION irrelevant for arm-64.
 Argument PARAMS parameters for org-babel."
-  (error "Arm-64 assembly is an assembled language -- no support for sessions"))
+  (error
+   "Arm-64 assembly is an assembled language -- no support for sessions"))
 
 (provide 'ob-asm)
 ;;; ob-asm.el ends here
